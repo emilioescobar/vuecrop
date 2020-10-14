@@ -1,10 +1,9 @@
 <template>
   <div id="app">
     <div size="120" class="user">
-      <v-img :src="image_name" class="profile-img"></v-img>
-      <v-icon class="icon primary white--text" @click="$refs.FileInput.click()"
-        >mdi-upload</v-icon
-      >
+      <img :src="image_name" class="profile-img" />
+      <button @click="$refs.FileInput.click()">Upload</button>
+
       <input
         ref="FileInput"
         type="file"
@@ -12,29 +11,41 @@
         @change="onFileSelect"
       />
     </div>
-    <v-dialog v-model="dialog" width="500">
-      <v-card>
-        <v-card-text>
+    <div v-show="dialog" width="500">
+      <div>
+        <div>
           <VueCropper
             v-show="selectedFile"
             ref="cropper"
             :src="selectedFile"
             alt="Source Image"
+            :aspectRatio="5 / 6"
+            :initialAspectRatio="1 / 1"
+            :rotatable="true"
+            :img-style="{ width: '400px', height: '300px' }"
           ></VueCropper>
-        </v-card-text>
-        <v-card-actions>
-          <v-btn class="primary" @click="saveImage(), (dialog = false)"
-            >Crop</v-btn
-          >
-          <v-btn color="primary" text @click="dialog = false">Cancel</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+        </div>
+        <div>
+          <button class="primary" @click="saveImage(), (dialog = false)">
+            Crop
+          </button>
+          <button @click="rotate">Rotate</button>
+          <button color="primary" text @click="dialog = false">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <p>
+      <!-- https://laracasts.com/discuss/channels/vue/how-to-set-aspect-ratio-to-11-in-vue-cropperjs -->
+    </p>
+    <p>
+      <!-- https://github.com/fengyuanchen/cropperjs#options -->
+    </p>
   </div>
 </template>
 <script>
 import VueCropper from 'vue-cropperjs'
 import 'cropperjs/dist/cropper.css'
+import axios from 'axios'
 export default {
   name: 'App',
   props: ['image_name'],
@@ -47,19 +58,24 @@ export default {
       selectedFile: '',
       image: '',
       dialog: false,
-      files: ''
+      files: '',
+      imgSrc: ''
     }
   },
   methods: {
     saveImage() {
-      const userId = this.$route.params.user_id
+      // const userId = 12
       this.cropedImage = this.$refs.cropper.getCroppedCanvas().toDataURL()
       this.$refs.cropper.getCroppedCanvas().toBlob(blob => {
         const formData = new FormData()
-        formData.append('profile_photo', blob, 'name.jpeg')
+        const id = 259
+        formData.append('id', id)
+        formData.append('file', blob, id + '.jpg')
         axios
-          .post('/api/user/' + userId + '/profile-photo', formData)
-          .then(response => {})
+          .post('/api/', formData)
+          .then(response => {
+            console.log('saveImage -> response', response)
+          })
           .catch(function(error) {
             console.log(error)
           })
@@ -80,6 +96,10 @@ export default {
       } else {
         alert('Sorry, FileReader API not supported')
       }
+    },
+    rotate() {
+      // guess what this does :)
+      this.$refs.cropper.rotate(90)
     }
   }
 }
